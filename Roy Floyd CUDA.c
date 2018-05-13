@@ -1,3 +1,5 @@
+#define INF 2
+
 __global__ void roy_floyd (float* C, int N)
 {
    int i = threadIdx.x;
@@ -22,10 +24,10 @@ int main()
     size_t size = N * sizeof(float);
 
     // Allocate input vector graph in host memory
-    float* h_graph = (float*)malloc(size);
+    float* graph = (float*)malloc(size);
 
     // Initialize input vectors
-    int d_graph[N][N] =
+    int graph[N][N] =
 	{
 		0,2,5,4,2,
 		1,0,0,3,2,
@@ -35,25 +37,21 @@ int main()
 	};
 
     // Allocate vectors in device memory
-    float* graph;
-    cudaMalloc(&graph, size);
+    float* d_graph;
+    cudaMalloc(&d_graph, size);
 
     // Copy vectors from host memory to device memory
-    cudaMemcpy(d_graph, h_graph, size, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_graph, graph, size, cudaMemcpyHostToDevice);
 
     // Invoke kernel
-    int threadsPerBlock = 256;
-    int blocksPerGrid =
-            (N + threadsPerBlock - 1) / threadsPerBlock;
+    dim3 threadsPerBlock(16, 16);
+    dim3 numBlocks(N / threadsPerBlock.x, N / threadsPerBlock.y, N / threadsPerBlock.z);
     roy_floyd<<<blocksPerGrid, threadsPerBlock>>>(d_graph, N);
 
     // Copy result from device memory to host memory
     // h_C contains the result in host memory
-    cudaMemcpy(h_graph, d_graph, size, cudaMemcpyDeviceToHost);
+    cudaMemcpy(d_graph, graph, size, cudaMemcpyDeviceToHost);
 
     // Free device memory
     cudaFree(d_graph);
-            
-    // Free host memory
-    cudaFree(h_graph);
 }
