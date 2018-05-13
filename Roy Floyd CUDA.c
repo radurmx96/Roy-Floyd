@@ -13,7 +13,6 @@ __global__ void roy_floyd (float* C, int N)
                if (C[i][j]>C[i][k]+C[k][j])
                {
                   C[i][j] = C[i][k]+C[k][j];
-                  tata[i][j] = tata[k][j];
                }
 }
         
