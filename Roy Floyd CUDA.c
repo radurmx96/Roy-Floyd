@@ -1,29 +1,25 @@
 #define INF 2
 
-__global__ void roy_floyd (float* C, int N)
+__global__ void roy_floyd (int* C, int N)
 {
    int i = threadIdx.x;
    int j = threadIdx.y;
-   int k = threadIdx.z;
-   
-   for (k=1;k<=N;k++)
-      for (i=1;i<=N;i++)
-         for (j=1;j<=N;j++)
-            if (C[i][k]!=INF && C[k][j]!=INF)
-               if (C[i][j]>C[i][k]+C[k][j])
-               {
-                  C[i][j] = C[i][k]+C[k][j];
-               }
+
+   if (C[i][procid]!=INF && C[procid][j]!=INF)
+     if (C[i][j]>C[i][procid]+C[procid][j])
+     {
+        C[i][j] = C[i][procid]+C[procid][j];
+     }
 }
         
 // Host code
 int main()
 {
     int N = 5;
-    size_t size = N * sizeof(float);
+    size_t size = N * N * sizeof(int);
 
     // Allocate input vector graph in host memory
-    float* graph = (float*)malloc(size);
+    int* graph = (int*)malloc(size);
 
     // Initialize input vectors
     int graph[N][N] =
@@ -36,7 +32,7 @@ int main()
 	};
 
     // Allocate vectors in device memory
-    float* d_graph;
+    int* d_graph;
     cudaMalloc(&d_graph, size);
 
     // Copy vectors from host memory to device memory
@@ -44,7 +40,7 @@ int main()
 
     // Invoke kernel
     dim3 threadsPerBlock(16, 16);
-    dim3 numBlocks(N / threadsPerBlock.x, N / threadsPerBlock.y, N / threadsPerBlock.z);
+    dim3 numBlocks(N / threadsPerBlock.x, N / threadsPerBlock.y);
     roy_floyd<<<blocksPerGrid, threadsPerBlock>>>(d_graph, N);
 
     // Copy result from device memory to host memory
